@@ -1,0 +1,91 @@
+PAM Format Guide
+PAM is the format of animation files found in some PopCap's games such as Plants vs. Zombies 2.
+
+Here I post most of the information found about how PAMs are coded. The content is supposed to be toward people who know programming and may want to help with tool making, as there is no tools for extracting or editing PAM yet.
+
+Though I've tried making one extracting tool to convert PAM to html before, I failed because it's too comlicated and in very few cases the tool works. Here you can see one example.
+
+Also many of the datamining job was done by 一路上海外(pcsmall), thanks for his helping.
+
+Main Structure
+Header
+Usually 0x54 19 F0 BA 06 00 00 00 1E 00 00 00 00 78 1E 78 1E
+
+
+Split Sprite (Image List)
+Start with the number of it (they most likey mean the texture amount, but im not sure), the block defines the split texture parts of one extracted sprite and their heights, widths, anchor points, transformation matrix, etc...
+
+Format: sprite_name (string_length(int16) + string)[1], width (signed int16), height (signed int16), ix, iy, jx, jy(signed int32)[2], anchor_x (signed int16), anchor_y(signed int16).
+
+The Split Sprite part starts with images_num(signed int16).
+
+However, as tested in game, the +/- of anchor point's x,y coded is opposite to actual effect.
+
+
+[1]: If the string is null(""), the string byte would be 0x0000(2 bytes of 0x00).
+
+
+[2]: They are the x,y of i hat and j hat which do linear transformation. The unit of these values is 0x10000, so they should be divided by 0x10000 when output. Usually the transformation matrix in the Image List part is (20, 0, 0, 20) here, that's why some used to divide the x,y by 20 when handling them (actually the image itself is enlarged).
+
+
+Layer (Sub Animation)
+The block depicts layers which are composed of transformed split sprites(or other layers). A layer could be one static frame with several changed split sprites(or other layers) or even an animation.
+
+Format: Animation Block.
+
+
+Animation
+The animation is coded frame by frame. Each does transfromations on several layers or split sprites.
+
+Format: Animation Block.
+
+
+Animation Block
+Animation block is a crucial part of in the pams. It depicts the animation of sub animation frame by frame through transformation on Layer or Split Sprite part.
+
+Format: animation_name(string_length(int16) + string), 0x00000000(4 bytes of 0x00), frame_per_second(signed int16), frame_num(signed int16), frame_to_begin(signed int16), frame_to_end(signed int16), Transformation Block
+
+The Animation Block part starts with animation_num/subanimation_num(signed int16).
+
+
+Transformation Block
+A Transformation Block is composed by block of reference table,block of transformation, etc..
+
+Here are the types in the block (probably not full yet)
+
+Type (Usage)
+
+Meaning
+0x1+script_type_string+script_string	run a script, usually sound effects (For example, Play_Plant_BloomingHeart_Idle_Kiss in a idle animation of Blooming Heart)
+0x4+num_item[1]	use the current reference table(for the frame block)
+0x14	
+variant of 0x4, claim the last frame
+
+0x24	variant of 0x4,used before last frame and followed by another special animation that actives some action(or other special command in game)
+0x5+num_item_del+block of reference table[2]+number_item	
+delete items in the reference table before starting the frame block
+
+0x15, 0x25	variant of 0x5
+0x6+num_item_add+block+number_item	add new items to the reference table
+0x16, 0x26	variant of 0x6
+0x7+num_item_del+block+num_item_add+block+num_item	delete and add items to the reference table
+0x17,0x27	variant of 0x7
+0xe+reference_table_num+block of reference table+animation name	claim the reference table
+0xf+num_item+block of reference_index(signed int16)	reclaim all the reference_index in the reference table
+0x2f	variant of 0xf
+reference_index+0x8+8 bytes	x(signed int32) ,y(signed int32)[3]
+reference_index+0x18+0x18 bytes	ix, iy, jx, jy,x,y(signed int32)
+reference_index+0x28+0xc bytes	x,y(signed int32),R,G,B,A(byte)
+reference_index+0x38+0x1c bytes	ix, jx, iy, jy,x,y(signed int32),R,G,B,A(byte)
+reference_index+0x48+0xa bytes	angel of rotation(clockwise, 1/1000π as unit, signed int16), x, y(signed int32)
+reference_index+0x68+0xe bytes	angel of rotation(signed int16), x, y(signed int32), R,G,B,A(byte)
+split_sprite_id(usually byte)[4] +0x0 + reference_index(usually byte)	define one item in reference table
+layer_id(usually byte)[4] +0x80 + reference_index(usually byte)	define one item in reference table
+layer_id(usually byte)[4] +0x90 + reference_index(usually byte) + label(string_length(int16) + string)	define one item in reference table with a label
+[1]: The number of all the items in the current reference table.
+
+[2]: The block is for reference table with 0x80, 0x0 or 0x90 (the last three types in the table above).
+
+[3]: The x,y or other transformation is based on the anchor point of split sprites (The anchor points for layers are 0,0).
+
+[4]: If split_sprite_id or layer_id are larger than 0xff, the 0x0, 0x80 or 0x90 will add itself by 1 and reset the split_sprite_id or layer_id. For example, if layer_id = 0x100, it will be 0x 0081+ reference_index.

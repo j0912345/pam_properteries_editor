@@ -1,0 +1,12 @@
+header
+uint 16 amount of sprites
+----------------------------------------------
+in every sprite:
+uint 16 string len, string
+int 16 sprite width
+int 16 sprite height
+(all of these are 32 bit ints): ix, iy, jx, jy
+(int16): anchor_X, anchor_Y
+------------------------------------------------
+Animation Block:
+------------------------------------------------
