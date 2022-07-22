@@ -9,4 +9,15 @@ int 16 sprite height
 (int16): anchor_X, anchor_Y
 ------------------------------------------------
 Animation Block:
+int16 amount of anims in the file (only at the start of the file)
+int 16 string len, string
+4 bytes of 0x00
+int16 fps
+int16 current_frame_num
+int16 frame_to_begin
+int16 frame_to_end
+a Transformation block
+------------------------------------------------
+Transformation block:
+0x1+script_type_string+script_string
 ------------------------------------------------
